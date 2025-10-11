@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Configure Prisma seed script
+// prisma db seed uses package.json prisma.seed command
+
+// Enums
+enum Category {
+  FONDUE
+  RACLETTE
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum SubscriberStatus {
+  PENDING
+  ACTIVE
+  UNSUB
+}
+
+enum CampaignStatus {
+  DRAFT
+  SENT
+}
+
+// Models
+model Product {
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique
+  title       String
+  description String
+  category    Category
+  imageUrl    String
+  priceCents  Int
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  variants    ProductVariant[]
+}
+
+model ProductVariant {
+  id              Int     @id @default(autoincrement())
+  productId       Int
+  name            String
+  sizeGrams       Int     @default(500)
+  extraPriceCents Int     @default(0)
+
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@unique([productId, name], name: "productId_name")
+}
+
+model Order {
+  id              Int       @id @default(autoincrement())
+  stripeSessionId String    @unique
+  email           String
+  items           Json
+  subtotalCents   Int
+  totalCents      Int
+  currency        String    @default("CHF")
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime  @default(now())
+}
+
+model Subscriber {
+  id           Int              @id @default(autoincrement())
+  email        String           @unique
+  status       SubscriberStatus @default(PENDING)
+  confirmToken String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model Campaign {
+  id       Int            @id @default(autoincrement())
+  title    String
+  subject  String
+  html     String
+  status   CampaignStatus @default(DRAFT)
+  sentAt   DateTime?
+  stats    Json?
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  rating    Int
+  message   String
+  createdAt DateTime @default(now())
+}
